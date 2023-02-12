@@ -46,10 +46,21 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
      ShowWindow(hwnd, nCmdShow);
 
      MSG msg = { };
-     while (GetMessage(&msg, NULL, 0, 0) > 0)
+     HACCEL hAccelTable = LoadAccelerators(hInstance, L"");
+     bool exit = false;
+     while (!exit)
      {
-          TranslateMessage(&msg);
-          DispatchMessage(&msg);
+          if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) > 0)
+          {
+               if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+               {
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+               }
+               if (WM_QUIT == msg.message)
+                    exit = true;
+          }
+          Renderer::GetInstance().Render();
      }
 
      return 0;
@@ -73,7 +84,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
           {
                PAINTSTRUCT ps;
                HDC hdc = BeginPaint(hwnd, &ps);
-               Renderer::GetInstance().Render();
                EndPaint(hwnd, &ps);
           }
           case WM_SIZE:
