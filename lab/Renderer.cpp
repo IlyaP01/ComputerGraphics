@@ -266,6 +266,12 @@ void Renderer::Cleanup()
      SAFE_RELEASE(pDeviceContext);
      SAFE_RELEASE(pSwapChain);
      SAFE_RELEASE(pDevice);
+     SAFE_RELEASE(pVertexBuffer);
+     SAFE_RELEASE(pIndexBuffer);
+     SAFE_RELEASE(pInputLayout);
+     SAFE_RELEASE(pVertexShader);
+     SAFE_RELEASE(pPixelShader);
+
 }
 
 Renderer::~Renderer() {
