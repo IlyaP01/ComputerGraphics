@@ -3,13 +3,30 @@
 #endif 
 
 #include "Renderer.h"
+#include "resource.h"
 
 #include <windows.h>
+#include <string>
+
+#define MAX_LOADSTRING 100
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
+     WCHAR szTitle[MAX_LOADSTRING];
+     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+     std::wstring dir;
+     dir.resize(MAX_PATH + 1);
+     GetCurrentDirectory(MAX_PATH + 1, &dir[0]);
+     size_t configPos = dir.find(L"x64");
+     if (configPos != std::wstring::npos)
+     {
+          dir.resize(configPos);
+          dir += szTitle;
+          SetCurrentDirectory(dir.c_str());
+     }
+
      // Register the window class.
      const wchar_t CLASS_NAME[] = L"Window Class";
 
@@ -26,7 +43,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
      HWND hwnd = CreateWindowEx(
           0,                              // Optional window styles.
           CLASS_NAME,                     // Window class
-          L"lab1",                        // Window text
+          L"lab",                        // Window text
           WS_OVERLAPPEDWINDOW,            // Window style
 
           // Size and position
@@ -85,12 +102,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                PAINTSTRUCT ps;
                HDC hdc = BeginPaint(hwnd, &ps);
                EndPaint(hwnd, &ps);
+               break;
           }
           case WM_SIZE:
           {
                RECT rc;
                GetClientRect(hwnd, &rc);
                Renderer::GetInstance().Resize(rc.right - rc.left, rc.bottom - rc.top);
+               break;
           }
           return 0;
      }
