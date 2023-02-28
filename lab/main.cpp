@@ -3,6 +3,7 @@
 #endif 
 
 #include "Renderer.h"
+#include "Input.h"
 #include "resource.h"
 
 #include <windows.h>
@@ -60,10 +61,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
           return 0;
      }
 
+     auto camera = std::make_shared<Camera>();
+     auto input = std::make_shared<Input>(hInstance, hwnd, camera);
+     if (!Renderer::GetInstance().Init(hwnd, camera))
+     {
+          return EXIT_FAILURE;
+     }
+
      ShowWindow(hwnd, nCmdShow);
 
      MSG msg = { };
      HACCEL hAccelTable = LoadAccelerators(hInstance, L"");
+
      bool exit = false;
      while (!exit)
      {
@@ -77,6 +86,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
                if (WM_QUIT == msg.message)
                     exit = true;
           }
+          input->Process();
+          Renderer::GetInstance().Update();
           Renderer::GetInstance().Render();
      }
 
@@ -88,10 +99,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
      switch (uMsg)
      {
           case WM_CREATE:
-               if (!Renderer::GetInstance().Init(hwnd))
-               {
-                    SendMessage(hwnd, WM_CLOSE, NULL, NULL);
-               }
                break;
           case WM_DESTROY:
                PostQuitMessage(0);
