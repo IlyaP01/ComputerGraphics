@@ -11,19 +11,19 @@ cbuffer ViewMatrixBuffer : register (b1)
 struct VSInput
 {
      float3 position : POSITION;
-     float4 color : COLOR;
+     float2 uv: TEXCOORD;
 };
 
 struct VSOutput {
      float4 position : SV_POSITION;
-     float4 color : COLOR;
+     float2 uv: TEXCOORD;
 };
-
+     
 VSOutput main(VSInput input)
 {
      VSOutput output;
      output.position = mul(viewProjectionMatrix, mul(worldMatrix, float4(input.position, 1.0f)));
-     output.color = input.color;
+     output.uv = input.uv;
 
      return output;
 }

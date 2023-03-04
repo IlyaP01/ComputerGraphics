@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera.h"
+#include "Sky.h"
 
 #include <d3d11.h>
 #include <dxgi.h>
@@ -15,62 +16,70 @@ public:
      bool Render();
      bool Update();
      bool Resize(const unsigned width, const unsigned height);
+     void Cleanup();
 
      Renderer(const Renderer&) = delete;
      Renderer& operator=(const Renderer&) = delete;
+
+     ~Renderer();
 private:
      struct Vertex {
           float x, y, z;
-          COLORREF color;
-     };/*
-     const Vertex vertices[3] = {
-        {-0.5f, -0.5f, 0.0f, RGB(255, 0, 0)},
-        { 0.5f, -0.5f, 0.0f, RGB(0, 255, 0)},
-        { 0.0f,  0.5f, 0.0f, RGB(0, 0, 255)}
+          float u, v;
      };
      
-     const USHORT indices[3] = { 0, 2, 1 };*/
-     const Vertex vertices[8] = {
-        { -1.0f, 1.0f, -1.0f, RGB(0, 0, 255) },
-        { 1.0f, 1.0f, -1.0f, RGB(0, 255, 0) },
-        { 1.0f, 1.0f, 1.0f, RGB(0, 255, 255) },
-        { -1.0f, 1.0f, 1.0f, RGB(255, 0, 0) },
-        { -1.0f, -1.0f, -1.0f, RGB(255, 0, 255) },
-        { 1.0f, -1.0f, -1.0f, RGB(255, 255, 0) },
-        { 1.0f, -1.0f, 1.0f, RGB(255, 255, 255) },
-        { -1.0f, -1.0f, 1.0f, RGB(0, 0, 0) }
+     const Vertex vertices[24] = {
+          // Bottom face
+           {-0.5, -0.5,  0.5, 0, 1},
+           { 0.5, -0.5,  0.5, 1, 1},
+           { 0.5, -0.5, -0.5, 1, 0},
+           {-0.5, -0.5, -0.5, 0, 0},
+           // Top face
+           {-0.5,  0.5, -0.5, 0, 1},
+           { 0.5,  0.5, -0.5, 1, 1},
+           { 0.5,  0.5,  0.5, 1, 0},
+           {-0.5,  0.5,  0.5, 0, 0},
+           // Front face
+           { 0.5, -0.5, -0.5, 0, 1},
+           { 0.5, -0.5,  0.5, 1, 1},
+           { 0.5,  0.5,  0.5, 1, 0},
+           { 0.5,  0.5, -0.5, 0, 0},
+           // Back face
+           {-0.5, -0.5,  0.5, 0, 1},
+           {-0.5, -0.5, -0.5, 1, 1},
+           {-0.5,  0.5, -0.5, 1, 0},
+           {-0.5,  0.5,  0.5, 0, 0},
+           // Left face
+           { 0.5, -0.5,  0.5, 0, 1},
+           {-0.5, -0.5,  0.5, 1, 1},
+           {-0.5,  0.5,  0.5, 1, 0},
+           { 0.5,  0.5,  0.5, 0, 0},
+           // Right face
+           {-0.5, -0.5, -0.5, 0, 1},
+           { 0.5, -0.5, -0.5, 1, 1},
+           { 0.5,  0.5, -0.5, 1, 0},
+           {-0.5,  0.5, -0.5, 0, 0}
      };
      
      const USHORT indices[36] = {
-        3,1,0,
-        2,1,3,
-
-        0,5,4,
-        1,5,0,
-
-        3,4,7,
-        0,4,3,
-
-        1,6,5,
-        2,6,1,
-
-        2,7,6,
-        3,7,2,
-
-        6,4,5,
-        7,4,6,
+        0, 2, 1, 0, 3, 2,
+        4, 6, 5, 4, 7, 6,
+        8, 10, 9, 8, 11, 10,
+        12, 14, 13, 12, 15, 14,
+        16, 18, 17, 16, 19, 18,
+        20, 22, 21, 20, 23, 22
      };
 
      Renderer() = default;
-     ~Renderer();
-     void Cleanup();
      HRESULT SetupBackBuffer();
      HRESULT CompileShaders();
      HRESULT CreateVertexBuffer();
      HRESULT CreateIndexBuffer();
      HRESULT CreateWorldMatrixBuffer();
-     HRESULT CreatesceneMatrixBuffer();
+     HRESULT CreateSceneMatrixBuffer();
      HRESULT CreateRasterizerState();
+     HRESULT CreateTexture();
+     HRESULT CreateSampler();
 
      std::shared_ptr<const Camera> pCamera = nullptr;
 
@@ -90,7 +99,12 @@ private:
      ID3D11Buffer* pWorldMatrixBuffer = nullptr;
      ID3D11Buffer* pViewMatrixBuffer = nullptr;
      ID3D11RasterizerState* pRasterizerState = nullptr;
+     ID3D11SamplerState* pSamplerState = nullptr;
+
+     ID3D11ShaderResourceView* pTextureView = nullptr;
 
      unsigned width = 0;
      unsigned height = 0;
+
+     Sky sky;
 };

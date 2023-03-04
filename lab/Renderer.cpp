@@ -1,8 +1,10 @@
 ﻿#include "Renderer.h"
 
 #include <d3dcompiler.h>
+#include "directxtk/DDSTextureLoader.h"
 
 #include <chrono>
+#include <string>
 
 #define SAFE_RELEASE(DXResource) do { if ((DXResource) != NULL) { (DXResource)->Release(); } } while (false);
 
@@ -120,7 +122,7 @@ bool Renderer::Init(const HWND hWnd, std::shared_ptr<const Camera> pCamera)
      if (!SUCCEEDED(result))
           return false;
 
-     result = CreatesceneMatrixBuffer();
+     result = CreateSceneMatrixBuffer();
      if (!SUCCEEDED(result))
           return false;
 
@@ -128,7 +130,15 @@ bool Renderer::Init(const HWND hWnd, std::shared_ptr<const Camera> pCamera)
      if (!SUCCEEDED(result))
           return false;
 
-     return true;
+     result = CreateSampler();
+     if (!SUCCEEDED(result))
+          return false;
+
+     result = CreateTexture();
+     if (!SUCCEEDED(result))
+          return false;
+
+     return sky.Init(pDevice, pDeviceContext, width, height);
 }
 
 bool Renderer::Render()
@@ -156,11 +166,19 @@ bool Renderer::Render()
      rect.bottom = height;
      pDeviceContext->RSSetScissorRects(1, &rect);
 
+     sky.Render();
+
      pDeviceContext->RSSetState(pRasterizerState);
+
+     ID3D11SamplerState* samplers[] = { pSamplerState };
+     pDeviceContext->PSSetSamplers(0, 1, samplers);
+
+     ID3D11ShaderResourceView* resources[] = { pTextureView };
+     pDeviceContext->PSSetShaderResources(0, 1, resources);
 
      pDeviceContext->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
      ID3D11Buffer* vertexBuffers[] = { pVertexBuffer };
-     UINT strides[] = { 16 };
+     UINT strides[] = { 20 };
      UINT offsets[] = { 0 };
      pDeviceContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
      pDeviceContext->IASetInputLayout(pInputLayout);
@@ -191,20 +209,19 @@ bool Renderer::Update()
 
      pDeviceContext->UpdateSubresource(pWorldMatrixBuffer, 0, nullptr, &worldMatrixBuffer, 0, 0);
 
-     DirectX::XMMATRIX mView = pCamera->GetViewMatrix();
+     DirectX::XMMATRIX view = pCamera->GetViewMatrix();
 
-     DirectX::XMMATRIX mProjection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV2, width / (FLOAT)height, 0.01f, 100.0f);
+     DirectX::XMMATRIX projection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV2, width / (FLOAT)height, 0.01f, 100.0f);
 
      D3D11_MAPPED_SUBRESOURCE subresource;
      HRESULT result = pDeviceContext->Map(pViewMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &subresource);
      if (SUCCEEDED(result)) 
      {
           ViewMatrixBuffer& sceneBuffer = *reinterpret_cast<ViewMatrixBuffer*>(subresource.pData);
-          sceneBuffer.viewProjMatrix = XMMatrixMultiply(mView, mProjection);
+          sceneBuffer.viewProjMatrix = XMMatrixMultiply(view, projection);
           pDeviceContext->Unmap(pViewMatrixBuffer, 0);
      }
-
-     return SUCCEEDED(result);
+     return SUCCEEDED(result) && sky.Update(view, projection, pCamera->GetPosition());
 }
 
 HRESULT Renderer::SetupBackBuffer() {
@@ -250,7 +267,7 @@ HRESULT Renderer::CompileShaders()
 
      static const D3D11_INPUT_ELEMENT_DESC InputDesc[] = {
           {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-          {"COLOR", 0,  DXGI_FORMAT_R8G8B8A8_UNORM, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0} };
+          {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0} };
      int numElements = sizeof(InputDesc) / sizeof(InputDesc[0]);
      hr = pDevice->CreateInputLayout(InputDesc, numElements, 
           vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), &pInputLayout);
@@ -318,7 +335,7 @@ HRESULT Renderer::CreateWorldMatrixBuffer()
      return pDevice->CreateBuffer(&desc, NULL, &pWorldMatrixBuffer);
 }
 
-HRESULT Renderer::CreatesceneMatrixBuffer()
+HRESULT Renderer::CreateSceneMatrixBuffer()
 {
      D3D11_BUFFER_DESC desc = {};
      desc.ByteWidth = sizeof(ViewMatrixBuffer);
@@ -348,11 +365,42 @@ HRESULT Renderer::CreateRasterizerState()
      return pDevice->CreateRasterizerState(&rasterizeDesc, &pRasterizerState);
 }
 
+struct TextureDesc​
+{
+     UINT32 pitch = 0;
+     UINT32 mipmapsCount = 0;
+     DXGI_FORMAT fmt = DXGI_FORMAT_UNKNOWN;
+     UINT32 width = 0;
+     UINT32 height = 0;
+     void* pData = nullptr;
+};
+
+HRESULT Renderer::CreateTexture()
+{
+     return DirectX::CreateDDSTextureFromFile(pDevice, L"textures/eye.dds", nullptr, &pTextureView);
+}
+
+HRESULT Renderer::CreateSampler()
+{
+     D3D11_SAMPLER_DESC desc = {};
+     desc.Filter = D3D11_FILTER_ANISOTROPIC;
+     desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+     desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+     desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+     desc.MinLOD = -D3D11_FLOAT32_MAX;
+     desc.MaxLOD = D3D11_FLOAT32_MAX;
+     desc.MipLODBias = 0.0f;
+     desc.MaxAnisotropy = 16;
+     desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+     desc.BorderColor[0] = desc.BorderColor[1] = desc.BorderColor[2] = desc.BorderColor[3] = 1.0f;
+     return pDevice->CreateSamplerState(&desc, &pSamplerState);
+}
+
 bool Renderer::Resize(const unsigned width, const unsigned height)
 {
      if (width != this->width || height != this->height) {
           SAFE_RELEASE(pBackBufferRTV);
-
+          sky.Resize(width, height);
           HRESULT hr = pSwapChain->ResizeBuffers(2, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
           if (SUCCEEDED(hr)) {
                this->width = width;
@@ -384,6 +432,8 @@ void Renderer::Cleanup()
      SAFE_RELEASE(pRasterizerState);
      SAFE_RELEASE(pViewMatrixBuffer);
      SAFE_RELEASE(pWorldMatrixBuffer);
+     SAFE_RELEASE(pSamplerState);
+     SAFE_RELEASE(pTextureView);
 }
 
 Renderer::~Renderer() {
