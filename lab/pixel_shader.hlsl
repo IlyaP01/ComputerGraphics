@@ -1,10 +1,13 @@
-struct VSOutput
-{
-     float4 pos : SV_POSITION;
-     float4 color: COLOR;
+Texture2D colorTexture : register (t0);
+
+SamplerState colorSampler : register(s0);
+
+struct VSOutput {
+     float4 position : SV_POSITION;
+     float2 uv : TEXCOORD;
 };
 
-float4 main(VSOutput pixel) : SV_TARGET
+float4 main(VSOutput input) : SV_TARGET
 {
-     return pixel.color;
+    return float4(colorTexture.Sample(colorSampler, input.uv).xyz, 1.0);
 }
