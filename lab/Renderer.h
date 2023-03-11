@@ -2,6 +2,7 @@
 
 #include "Camera.h"
 #include "Sky.h"
+#include "Transparent.h"
 
 #include <d3d11.h>
 #include <dxgi.h>
@@ -80,6 +81,8 @@ private:
      HRESULT CreateRasterizerState();
      HRESULT CreateTexture();
      HRESULT CreateSampler();
+     HRESULT CreateDepthBuffer();
+     HRESULT CreateDepthState();
 
      std::shared_ptr<const Camera> pCamera = nullptr;
 
@@ -90,6 +93,7 @@ private:
      ID3D11RenderTargetView* pBackBufferRTV = nullptr;
 
      ID3D11VertexShader* pVertexShader = nullptr;
+     ID3D11VertexShader* pVertexShader2 = nullptr;
      ID3D11PixelShader* pPixelShader = nullptr;
      ID3D11InputLayout* pInputLayout = nullptr;
 
@@ -103,8 +107,13 @@ private:
 
      ID3D11ShaderResourceView* pTextureView = nullptr;
 
+     ID3D11Texture2D* pDepthBuffer = nullptr;
+     ID3D11DepthStencilView* pDepthBufferDSV = nullptr;
+     ID3D11DepthStencilState* pDepthState = nullptr;
+
      unsigned width = 0;
      unsigned height = 0;
 
      Sky sky;
+     Transparent trans;
 };

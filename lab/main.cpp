@@ -68,7 +68,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
           return EXIT_FAILURE;
      }
 
-     PlaySound(L"music.wav", NULL, SND_ASYNC);
      ShowWindow(hwnd, nCmdShow);
 
      MSG msg = { };
