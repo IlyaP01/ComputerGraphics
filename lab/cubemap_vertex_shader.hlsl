@@ -25,6 +25,7 @@ VSOutput main(VSInput input) {
 
      float3 pos = cameraPos.xyz + input.position * size.x;
      output.position = mul(viewProjMatrix, mul(worldMatrix, float4(pos, 1.0f)));
+     output.position.z = 0;
      output.localPos = input.position;
 
      return output;

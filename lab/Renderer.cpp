@@ -138,17 +138,27 @@ bool Renderer::Init(const HWND hWnd, std::shared_ptr<const Camera> pCamera)
      if (!SUCCEEDED(result))
           return false;
 
-     return sky.Init(pDevice, pDeviceContext, width, height);
+     result = CreateDepthBuffer();
+     if (!SUCCEEDED(result))
+          return false;
+
+     result = CreateDepthState();
+     if (!SUCCEEDED(result))
+          return false;
+
+     return sky.Init(pDevice, pDeviceContext, width, height) && trans.Init(pDevice, pDeviceContext, width, height);
 }
 
 bool Renderer::Render()
 {
      pDeviceContext->ClearState();
      ID3D11RenderTargetView* views[] = { pBackBufferRTV };
-     pDeviceContext->OMSetRenderTargets(1, views, NULL);
+     pDeviceContext->OMSetRenderTargets(1, views, pDepthBufferDSV);
+     pDeviceContext->OMSetDepthStencilState(pDepthState, 0);
 
      static const FLOAT backColor[4] = { 0.5f, 0.5f, 0.7f, 1.0f };
      pDeviceContext->ClearRenderTargetView(pBackBufferRTV, backColor);
+     pDeviceContext->ClearDepthStencilView(pDepthBufferDSV, D3D11_CLEAR_DEPTH, 0.0f, 0);
 
      D3D11_VIEWPORT viewport;
      viewport.TopLeftX = 0;
@@ -165,8 +175,6 @@ bool Renderer::Render()
      rect.right = width;
      rect.bottom = height;
      pDeviceContext->RSSetScissorRects(1, &rect);
-
-     sky.Render();
 
      pDeviceContext->RSSetState(pRasterizerState);
 
@@ -185,9 +193,17 @@ bool Renderer::Render()
      pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
      pDeviceContext->VSSetConstantBuffers(0, 1, &pWorldMatrixBuffer);
      pDeviceContext->VSSetConstantBuffers(1, 1, &pViewMatrixBuffer);
-     pDeviceContext->VSSetShader(pVertexShader, nullptr, 0);
      pDeviceContext->PSSetShader(pPixelShader, nullptr, 0);
+
+     pDeviceContext->VSSetShader(pVertexShader, nullptr, 0);
      pDeviceContext->DrawIndexed(36, 0, 0);
+
+     pDeviceContext->VSSetShader(pVertexShader2, nullptr, 0);
+     pDeviceContext->DrawIndexed(36, 0, 0);
+
+     sky.Render();
+
+     trans.Render();
 
      HRESULT result = pSwapChain->Present(0, 0);
      return SUCCEEDED(result);
@@ -205,13 +221,14 @@ bool Renderer::Update()
      t = (timeCur - timeStart) / 1000.0f;
 
      WorldMatrixBuffer worldMatrixBuffer;
+     t = 0;
      worldMatrixBuffer.worldMatrix = DirectX::XMMatrixRotationY(t);
 
      pDeviceContext->UpdateSubresource(pWorldMatrixBuffer, 0, nullptr, &worldMatrixBuffer, 0, 0);
 
      DirectX::XMMATRIX view = pCamera->GetViewMatrix();
 
-     DirectX::XMMATRIX projection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV2, width / (FLOAT)height, 0.01f, 100.0f);
+     DirectX::XMMATRIX projection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV2, width / (FLOAT)height, 100.0f, 0.1f);
 
      D3D11_MAPPED_SUBRESOURCE subresource;
      HRESULT result = pDeviceContext->Map(pViewMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &subresource);
@@ -238,6 +255,7 @@ HRESULT Renderer::SetupBackBuffer() {
 HRESULT Renderer::CompileShaders()
 {
      ID3D10Blob* vertexShaderBuffer = nullptr;
+     ID3D10Blob* vertexShaderBuffer2 = nullptr;
      ID3D10Blob* pixelShaderBuffer = nullptr;
      
      int flags = 0;
@@ -252,6 +270,16 @@ HRESULT Renderer::CompileShaders()
      
      hr = pDevice->CreateVertexShader(vertexShaderBuffer->GetBufferPointer(), 
           vertexShaderBuffer->GetBufferSize(), NULL, &pVertexShader);
+     if (!SUCCEEDED(hr))
+          return hr;
+
+     hr = D3DCompileFromFile(L"vertex_shader2.hlsl", NULL, NULL,
+          "main", "vs_5_0", flags, 0, &vertexShaderBuffer2, NULL);
+     if (!SUCCEEDED(hr))
+          return hr;
+
+     hr = pDevice->CreateVertexShader(vertexShaderBuffer2->GetBufferPointer(),
+          vertexShaderBuffer2->GetBufferSize(), NULL, &pVertexShader2);
      if (!SUCCEEDED(hr))
           return hr;
     
@@ -273,6 +301,7 @@ HRESULT Renderer::CompileShaders()
           vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), &pInputLayout);
      
      SAFE_RELEASE(vertexShaderBuffer);
+     SAFE_RELEASE(vertexShaderBuffer2);
      SAFE_RELEASE(pixelShaderBuffer);
 
      return hr;
@@ -396,6 +425,40 @@ HRESULT Renderer::CreateSampler()
      return pDevice->CreateSamplerState(&desc, &pSamplerState);
 }
 
+HRESULT Renderer::CreateDepthBuffer()
+{
+     D3D11_TEXTURE2D_DESC desc = {};
+     desc.Format = DXGI_FORMAT_D16_UNORM;
+     desc.ArraySize = 1;
+     desc.MipLevels = 1;
+     desc.Usage = D3D11_USAGE_DEFAULT;
+     desc.Height = height;
+     desc.Width = width;
+     desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+     desc.CPUAccessFlags = 0;
+     desc.MiscFlags = 0;
+     desc.SampleDesc.Count = 1;
+     desc.SampleDesc.Quality = 0;
+
+     HRESULT hr = pDevice->CreateTexture2D(&desc, NULL, &pDepthBuffer);
+     if (SUCCEEDED(hr)) 
+     {
+          hr = pDevice->CreateDepthStencilView(pDepthBuffer, NULL, &pDepthBufferDSV);
+     }
+     return hr;
+}
+
+HRESULT Renderer::CreateDepthState()
+{
+     D3D11_DEPTH_STENCIL_DESC desc = { 0 };
+     desc.DepthEnable = TRUE;
+     desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+     desc.DepthFunc = D3D11_COMPARISON_GREATER_EQUAL;
+     desc.StencilEnable = FALSE;
+
+     return pDevice->CreateDepthStencilState(&desc, &pDepthState);
+}
+
 bool Renderer::Resize(const unsigned width, const unsigned height)
 {
      if (width != this->width || height != this->height) {
@@ -434,6 +497,9 @@ void Renderer::Cleanup()
      SAFE_RELEASE(pWorldMatrixBuffer);
      SAFE_RELEASE(pSamplerState);
      SAFE_RELEASE(pTextureView);
+     SAFE_RELEASE(pDepthBuffer);
+     SAFE_RELEASE(pDepthBufferDSV);
+     SAFE_RELEASE(pDepthState);
 }
 
 Renderer::~Renderer() {
