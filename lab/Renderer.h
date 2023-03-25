@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "Sky.h"
 #include "Transparent.h"
+#include "Lights.h"
 
 #include <d3d11.h>
 #include <dxgi.h>
@@ -25,41 +26,42 @@ public:
      ~Renderer();
 private:
      struct Vertex {
-          float x, y, z;
-          float u, v;
+          DirectX::XMFLOAT3 pos;
+          DirectX::XMFLOAT2 uv;
+          DirectX::XMFLOAT3 normal;
+          DirectX::XMFLOAT3 tangent;
      };
      
      const Vertex vertices[24] = {
-          // Bottom face
-           {-0.5, -0.5,  0.5, 0, 1},
-           { 0.5, -0.5,  0.5, 1, 1},
-           { 0.5, -0.5, -0.5, 1, 0},
-           {-0.5, -0.5, -0.5, 0, 0},
-           // Top face
-           {-0.5,  0.5, -0.5, 0, 1},
-           { 0.5,  0.5, -0.5, 1, 1},
-           { 0.5,  0.5,  0.5, 1, 0},
-           {-0.5,  0.5,  0.5, 0, 0},
-           // Front face
-           { 0.5, -0.5, -0.5, 0, 1},
-           { 0.5, -0.5,  0.5, 1, 1},
-           { 0.5,  0.5,  0.5, 1, 0},
-           { 0.5,  0.5, -0.5, 0, 0},
-           // Back face
-           {-0.5, -0.5,  0.5, 0, 1},
-           {-0.5, -0.5, -0.5, 1, 1},
-           {-0.5,  0.5, -0.5, 1, 0},
-           {-0.5,  0.5,  0.5, 0, 0},
-           // Left face
-           { 0.5, -0.5,  0.5, 0, 1},
-           {-0.5, -0.5,  0.5, 1, 1},
-           {-0.5,  0.5,  0.5, 1, 0},
-           { 0.5,  0.5,  0.5, 0, 0},
-           // Right face
-           {-0.5, -0.5, -0.5, 0, 1},
-           { 0.5, -0.5, -0.5, 1, 1},
-           { 0.5,  0.5, -0.5, 1, 0},
-           {-0.5,  0.5, -0.5, 0, 0}
+          Vertex{{-0.5, -0.5, 0.5}, {0, 1}, {0, -1, 0}, {1, 0, 0}},
+          Vertex{{0.5, -0.5, 0.5}, {1, 1}, {0, -1, 0}, {1, 0, 0}},
+          Vertex{{0.5, -0.5, -0.5}, {1, 0}, {0, -1, 0}, {1, 0, 0}},
+          Vertex{{-0.5, -0.5, -0.5}, {0, 0}, {0, -1, 0}, {1, 0, 0}},
+
+          Vertex{{-0.5, 0.5, -0.5}, {0, 1}, {0, 1, 0}, {1, 0, 0}},
+          Vertex{{0.5, 0.5, -0.5}, {1, 1}, {0, 1, 0}, {1, 0, 0}},
+          Vertex{{0.5, 0.5, 0.5}, {1, 0}, {0, 1, 0}, {1, 0, 0}},
+          Vertex{{-0.5, 0.5, 0.5}, {0, 0}, {0, 1, 0}, {1, 0, 0}},
+
+          Vertex{{0.5, -0.5, -0.5}, {0, 1}, {1, 0, 0}, {0, 0, 1}},
+          Vertex{{0.5, -0.5, 0.5}, {1, 1}, {1, 0, 0}, {0, 0, 1}},
+          Vertex{{0.5, 0.5, 0.5}, {1, 0}, {1, 0, 0}, {0, 0, 1}},
+          Vertex{{0.5, 0.5, -0.5}, {0, 0}, {1, 0, 0}, {0, 0, 1}},
+
+          Vertex{{-0.5, -0.5, 0.5}, {0, 1}, {-1, 0, 0}, {0, 0, -1}},
+          Vertex{{-0.5, -0.5, -0.5}, {1, 1}, {-1, 0, 0}, {0, 0, -1}},
+          Vertex{{-0.5, 0.5, -0.5}, {1, 0}, {-1, 0, 0}, {0, 0, -1}},
+          Vertex{{-0.5, 0.5, 0.5}, {0, 0}, {-1, 0, 0}, {0, 0, -1}},
+
+          Vertex{{0.5, -0.5, 0.5}, {0, 1}, {0, 0, 1}, {-1, 0, 0}},
+          Vertex{{-0.5, -0.5, 0.5}, {1, 1}, {0, 0, 1}, {-1, 0, 0}},
+          Vertex{{-0.5, 0.5, 0.5}, {1, 0}, {0, 0, 1}, {-1, 0, 0}},
+          Vertex{{0.5, 0.5, 0.5}, {0, 0}, {0, 0, 1}, {-1, 0, 0}},
+
+          Vertex{{-0.5, -0.5, -0.5}, {0, 1}, {0, 0, -1}, {1, 0, 0}},
+          Vertex{{0.5, -0.5, -0.5}, {1, 1}, {0, 0, -1}, {1, 0, 0}},
+          Vertex{{0.5, 0.5, -0.5}, {1, 0}, {0, 0, -1}, {1, 0, 0}},
+          Vertex{{-0.5, 0.5, -0.5}, {0, 0}, {0, 0, -1}, {1, 0, 0}}
      };
      
      const USHORT indices[36] = {
@@ -71,6 +73,8 @@ private:
         20, 22, 21, 20, 23, 22
      };
 
+     static constexpr const DirectX::XMFLOAT4 ambientColor_{ 0.5f, 0.5f, 0.5f, 1.0f };
+
      Renderer() = default;
      HRESULT SetupBackBuffer();
      HRESULT CompileShaders();
@@ -79,8 +83,8 @@ private:
      HRESULT CreateWorldMatrixBuffer();
      HRESULT CreateSceneMatrixBuffer();
      HRESULT CreateRasterizerState();
-     HRESULT CreateTexture();
-     HRESULT CreateSampler();
+     HRESULT CreateTextures();
+     HRESULT CreateSamplers();
      HRESULT CreateDepthBuffer();
      HRESULT CreateDepthState();
 
@@ -93,7 +97,6 @@ private:
      ID3D11RenderTargetView* pBackBufferRTV = nullptr;
 
      ID3D11VertexShader* pVertexShader = nullptr;
-     ID3D11VertexShader* pVertexShader2 = nullptr;
      ID3D11PixelShader* pPixelShader = nullptr;
      ID3D11InputLayout* pInputLayout = nullptr;
 
@@ -101,11 +104,15 @@ private:
      ID3D11Buffer* pIndexBuffer = nullptr;
 
      ID3D11Buffer* pWorldMatrixBuffer = nullptr;
+     ID3D11Buffer* pWorldMatrixBuffer2 = nullptr;
      ID3D11Buffer* pViewMatrixBuffer = nullptr;
      ID3D11RasterizerState* pRasterizerState = nullptr;
-     ID3D11SamplerState* pSamplerState = nullptr;
 
-     ID3D11ShaderResourceView* pTextureView = nullptr;
+     ID3D11ShaderResourceView* pCubeTexture = nullptr;
+     ID3D11ShaderResourceView* pCubeNormalMap = nullptr;
+
+     ID3D11SamplerState* pCubeTextureSampler = nullptr;
+     ID3D11SamplerState* pCubeNormalsSampler = nullptr;
 
      ID3D11Texture2D* pDepthBuffer = nullptr;
      ID3D11DepthStencilView* pDepthBufferDSV = nullptr;
@@ -116,4 +123,5 @@ private:
 
      Sky sky;
      Transparent trans;
+     Lights lights;
 };

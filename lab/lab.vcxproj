@@ -149,21 +149,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="D3DInclude.cpp" />
     <ClCompile Include="directxtk\DDSTextureLoader.cpp" />
     <ClCompile Include="Input.cpp" />
+    <ClCompile Include="Lights.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Sky.cpp" />
     <ClCompile Include="Transparent.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="D3DInclude.h" />
     <ClInclude Include="directxtk\DDSTextureLoader.h" />
     <ClInclude Include="Input.h" />
+    <ClInclude Include="Lights.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Sky.h" />
     <ClInclude Include="Transparent.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="cubemap_pixel_shader.hlsl">
@@ -187,6 +193,10 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="TransPS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
@@ -194,13 +204,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="TransVS1.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="TransVS2.hlsl">
+    <FxCompile Include="TransVS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
@@ -212,15 +216,13 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
-    <FxCompile Include="vertex_shader2.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="lab.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="calc_color.hlsli" />
+    <None Include="scene_buffer.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
