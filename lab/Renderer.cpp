@@ -737,6 +737,11 @@ void Renderer::Cleanup()
      SAFE_RELEASE(pDepthBuffer);
      SAFE_RELEASE(pDepthBufferDSV);
      SAFE_RELEASE(pDepthState);
+     SAFE_RELEASE(pRenderTargetTexture);
+     SAFE_RELEASE(pRenderTargetView);
+     SAFE_RELEASE(pShaderResourceViewRenderResult);
+     SAFE_RELEASE(pCubeNormalsSampler);
+     SAFE_RELEASE(pWorldBufferInstVis);
 }
 
 Renderer::~Renderer() {
