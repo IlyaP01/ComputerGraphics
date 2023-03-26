@@ -1,12 +1,9 @@
 #include "PostProc.h"
 
-HRESULT PostProc::Init(ID3D11Device* pDevice, 
-     ID3D11DeviceContext* ppDeviceContext, 
-     ID3D11RenderTargetView* renderTarget)
+HRESULT PostProc::Init(ID3D11Device* pDevice, ID3D11DeviceContext* ppDeviceContext)
 {
      this-> pDevice = pDevice;
      this->pDeviceContext = ppDeviceContext;
-     this->renderTarget = renderTarget;
      
      ID3D10Blob* vertexShaderBuffer = nullptr;
      ID3D10Blob* pixelShaderBuffer = nullptr;
@@ -49,7 +46,7 @@ HRESULT PostProc::Init(ID3D11Device* pDevice,
      return S_OK;
 }
 
-void PostProc::Render(D3D11_VIEWPORT viewport, ID3D11ShaderResourceView* texture)
+void PostProc::Render(D3D11_VIEWPORT viewport, ID3D11ShaderResourceView* texture, ID3D11RenderTargetView* renderTarget)
 {
      pDeviceContext->OMSetRenderTargets(1, &renderTarget, nullptr);
      pDeviceContext->RSSetViewports(1, &viewport);

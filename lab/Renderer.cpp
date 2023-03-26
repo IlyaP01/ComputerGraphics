@@ -140,7 +140,7 @@ bool Renderer::Init(const HWND hWnd, std::shared_ptr<const Camera> pCamera)
      if (!SUCCEEDED(result))
           return false;
 
-     result = postProc.Init(pDevice, pDeviceContext, pBackBufferRTV);
+     result = postProc.Init(pDevice, pDeviceContext);
      if (!SUCCEEDED(result))
           return false;
 
@@ -287,7 +287,7 @@ bool Renderer::Render()
      pDeviceContext->ClearRenderTargetView(pBackBufferRTV, backColor);
      pDeviceContext->ClearDepthStencilView(pDepthBufferDSV, D3D11_CLEAR_DEPTH, 0.0f, 0);
 
-     postProc.Render(viewport, pShaderResourceViewRenderResult);
+     postProc.Render(viewport_, pShaderResourceViewRenderResult, pBackBufferRTV);
 
      HRESULT result = pSwapChain->Present(0, 0);
      return SUCCEEDED(result);
@@ -341,15 +341,38 @@ bool Renderer::Update()
      return sky.Update(view, proj, pov);
 }
 
-HRESULT Renderer::SetupBackBuffer() {
+HRESULT Renderer::SetupBackBuffer() 
+{
      ID3D11Texture2D* pBackBuffer = NULL;
      HRESULT hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-     if (SUCCEEDED(hr)) {
+     if (SUCCEEDED(hr)) 
+     {
           hr = pDevice->CreateRenderTargetView(pBackBuffer, NULL, &pBackBufferRTV);
           SAFE_RELEASE(pBackBuffer);
      }
+     if (SUCCEEDED(hr))
+     {
+          SAFE_RELEASE(pDepthBuffer);
+          SAFE_RELEASE(pDepthBufferDSV);
+          D3D11_TEXTURE2D_DESC desc = {};
+          desc.Format = DXGI_FORMAT_D32_FLOAT;
+          desc.ArraySize = 1;
+          desc.MipLevels = 1;
+          desc.Usage = D3D11_USAGE_DEFAULT;
+          desc.Height = height;
+          desc.Width = width;
+          desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+          desc.CPUAccessFlags = 0;
+          desc.MiscFlags = 0;
+          desc.SampleDesc.Count = 1;
+          desc.SampleDesc.Quality = 0;
 
-     return hr;
+          hr = pDevice->CreateTexture2D(&desc, NULL, &pDepthBuffer);
+          if (SUCCEEDED(hr)) {
+               hr = pDevice->CreateDepthStencilView(pDepthBuffer, NULL, &pDepthBufferDSV);
+          }
+          return hr;
+     }
 }
 
 HRESULT Renderer::CompileShaders()
