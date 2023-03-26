@@ -19,6 +19,12 @@
     <FxCompile Include="TransVS.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
+    <FxCompile Include="postprocVS.hlsl">
+      <Filter>shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="postProcPS.hlsl">
+      <Filter>shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="directxtk\DDSTextureLoader.cpp" />
@@ -39,6 +45,12 @@
       <Filter>utils</Filter>
     </ClCompile>
     <ClCompile Include="D3DInclude.cpp" />
+    <ClCompile Include="Frustum.cpp">
+      <Filter>frustrum</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProc.cpp">
+      <Filter>postproc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="directxtk\DDSTextureLoader.h" />
@@ -59,6 +71,12 @@
       <Filter>utils</Filter>
     </ClInclude>
     <ClInclude Include="D3DInclude.h" />
+    <ClInclude Include="Frustum.h">
+      <Filter>frustrum</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProc.h">
+      <Filter>postproc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="shaders">
@@ -78,6 +96,12 @@
     </Filter>
     <Filter Include="utils">
       <UniqueIdentifier>{8bd0601e-98a0-428e-bb5a-2ea319207b40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="frustrum">
+      <UniqueIdentifier>{332c6538-216e-4d1f-b314-9e8683621a76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="postproc">
+      <UniqueIdentifier>{1ebe6be9-03e3-4282-82df-68beb94416e6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
