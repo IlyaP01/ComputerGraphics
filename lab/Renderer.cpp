@@ -553,11 +553,13 @@ void Renderer::Cleanup()
      SAFE_RELEASE(pViewMatrixBuffer);
      SAFE_RELEASE(pWorldMatrixBuffer);
      SAFE_RELEASE(pCubeTextureSampler);
+     SAFE_RELEASE(pCubeNormalsSampler);
      SAFE_RELEASE(pCubeTexture);
      SAFE_RELEASE(pCubeNormalMap);
      SAFE_RELEASE(pDepthBuffer);
      SAFE_RELEASE(pDepthBufferDSV);
      SAFE_RELEASE(pDepthState);
+     SAFE_RELEASE(pWorldMatrixBuffer2);
 }
 
 Renderer::~Renderer() {
