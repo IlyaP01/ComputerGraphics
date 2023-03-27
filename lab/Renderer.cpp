@@ -1,4 +1,4 @@
-﻿#include "Renderer.h"
+#include "Renderer.h"
 #include "utils.h"
 
 #include <d3dcompiler.h>
@@ -733,6 +733,8 @@ void Renderer::Cleanup()
      SAFE_RELEASE(pWorldMatrixBuffer);
      SAFE_RELEASE(pCubeTextureSampler);
      SAFE_RELEASE(pTextureView);
+     SAFE_RELEASE(pCubeNormalsSampler);
+     SAFE_RELEASE(pCubeTexture);
      SAFE_RELEASE(pCubeNormalMap);
      SAFE_RELEASE(pDepthBuffer);
      SAFE_RELEASE(pDepthBufferDSV);
@@ -740,7 +742,6 @@ void Renderer::Cleanup()
      SAFE_RELEASE(pRenderTargetTexture);
      SAFE_RELEASE(pRenderTargetView);
      SAFE_RELEASE(pShaderResourceViewRenderResult);
-     SAFE_RELEASE(pCubeNormalsSampler);
      SAFE_RELEASE(pWorldBufferInstVis);
 }
 
