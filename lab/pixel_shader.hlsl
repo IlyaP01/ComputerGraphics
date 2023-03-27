@@ -13,7 +13,7 @@ struct WorldBuffer
 
 cbuffer WorldBufferInst : register (b0)
 {
-     WorldBuffer worldBuffer[100];
+     WorldBuffer worldBuffer[20];
 };
 
 struct VSOutput
