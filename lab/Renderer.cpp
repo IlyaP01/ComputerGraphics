@@ -275,7 +275,7 @@ bool Renderer::Render()
      pDeviceContext->PSSetShader(pPixelShader, nullptr, 0);
      pDeviceContext->VSSetShader(pVertexShader, nullptr, 0);
      
-     pDeviceContext->DrawIndexedInstanced(36, worldMatricies.size(), 0, 0, 0);
+     pDeviceContext->DrawIndexedInstanced(36, ids.size(), 0, 0, 0);
 
      sky.Render();
 
