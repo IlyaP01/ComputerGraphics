@@ -734,7 +734,6 @@ void Renderer::Cleanup()
      SAFE_RELEASE(pCubeTextureSampler);
      SAFE_RELEASE(pTextureView);
      SAFE_RELEASE(pCubeNormalsSampler);
-     SAFE_RELEASE(pCubeTexture);
      SAFE_RELEASE(pCubeNormalMap);
      SAFE_RELEASE(pDepthBuffer);
      SAFE_RELEASE(pDepthBufferDSV);
