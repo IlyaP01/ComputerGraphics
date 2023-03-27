@@ -1,9 +1,15 @@
 #include "Transparent.h"
+#include "utils.h"
+#include "Lights.h"
 
 #include <d3dcompiler.h>
 #include <dxgi.h>
 
-#define SAFE_RELEASE(DXResource) do { if ((DXResource) != NULL) { (DXResource)->Release(); } } while (false);
+struct TransparentWorldBuffer
+{
+     DirectX::XMMATRIX worldMatrix;
+     DirectX::XMFLOAT4 color;
+};
 
 bool Transparent::Init(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, int width, int height)
 {
@@ -32,6 +38,10 @@ bool Transparent::Init(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContex
      result = CreateDepthState();
      if (!SUCCEEDED(result))
           return false;
+     
+     result = CreateWorldBuffers();
+     if (!SUCCEEDED(result))
+          return false;
 
      return true;
 }
@@ -50,16 +60,18 @@ void Transparent::Render()
      pDeviceContext->RSSetState(pRasterizerState);
 
      pDeviceContext->PSSetShader(pPixelShader, nullptr, 0);
+     pDeviceContext->VSSetShader(pVertexShader, nullptr, 0);
 
      pDeviceContext->OMSetBlendState(pBlendState, nullptr, 0xFFFFFFFF);
      pDeviceContext->OMSetDepthStencilState(pDepthState, 0);
 
-     pDeviceContext->VSSetShader(pVertexShader, nullptr, 0);
+     pDeviceContext->VSSetConstantBuffers(0, 1, &pWorldBuffer);
+     pDeviceContext->PSSetConstantBuffers(0, 1, &pWorldBuffer);
      pDeviceContext->DrawIndexed(6, 0, 0);
 
-     pDeviceContext->VSSetShader(pVertexShader2, nullptr, 0);
+     pDeviceContext->VSSetConstantBuffers(0, 1, &pWorldBuffer2);
+     pDeviceContext->PSSetConstantBuffers(0, 1, &pWorldBuffer2);
      pDeviceContext->DrawIndexed(6, 0, 0);
-
 }
 
 void Transparent::Cleanup()
@@ -72,6 +84,8 @@ void Transparent::Cleanup()
      SAFE_RELEASE(pInputLayout);
      SAFE_RELEASE(pDepthState);
      SAFE_RELEASE(pBlendState);
+     SAFE_RELEASE(pWorldBuffer);
+     SAFE_RELEASE(pWorldBuffer2);
 }
 
 Transparent::~Transparent()
@@ -118,16 +132,9 @@ HRESULT Transparent::CreateIndexBuffer()
 HRESULT Transparent::CompileShaders()
 {
      ID3D10Blob* vertexShaderBuffer = nullptr;
-     ID3D10Blob* vertexShaderBuffer2 = nullptr;
      ID3D10Blob* pixelShaderBuffer = nullptr;
 
-     int flags = 0;
-#ifdef _DEBUG
-     flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
-
-     HRESULT hr = D3DCompileFromFile(L"TransVS1.hlsl", NULL, NULL,
-          "main", "vs_5_0", flags, 0, &vertexShaderBuffer, NULL);
+     HRESULT hr = CompileShaderFromFile(L"TransVS.hlsl", "main", "vs_5_0", &vertexShaderBuffer);
      if (!SUCCEEDED(hr))
           return hr;
 
@@ -136,18 +143,7 @@ HRESULT Transparent::CompileShaders()
      if (!SUCCEEDED(hr))
           return hr;
 
-     hr = D3DCompileFromFile(L"TransVS2.hlsl", NULL, NULL,
-          "main", "vs_5_0", flags, 0, &vertexShaderBuffer2, NULL);
-     if (!SUCCEEDED(hr))
-          return hr;
-
-     hr = pDevice->CreateVertexShader(vertexShaderBuffer2->GetBufferPointer(),
-          vertexShaderBuffer2->GetBufferSize(), NULL, &pVertexShader2);
-     if (!SUCCEEDED(hr))
-          return hr;
-
-     hr = D3DCompileFromFile(L"TransPS.hlsl", NULL, NULL,
-          "main", "ps_5_0", flags, 0, &pixelShaderBuffer, NULL);
+     hr = CompileShaderFromFile(L"TransPS.hlsl", "main", "ps_5_0", &pixelShaderBuffer);
      if (!SUCCEEDED(hr))
           return hr;
 
@@ -159,12 +155,11 @@ HRESULT Transparent::CompileShaders()
      static const D3D11_INPUT_ELEMENT_DESC InputDesc[] = {
       {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
      };
-     int numElements = sizeof(InputDesc) / sizeof(InputDesc[0]);
+     int numElements = ARRAYSIZE(InputDesc);
      hr = pDevice->CreateInputLayout(InputDesc, numElements,
           vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), &pInputLayout);
 
      SAFE_RELEASE(vertexShaderBuffer);
-     SAFE_RELEASE(vertexShaderBuffer2);
      SAFE_RELEASE(pixelShaderBuffer);
 
      return hr;
@@ -214,4 +209,33 @@ HRESULT Transparent::CreateDepthState()
      desc.StencilEnable = FALSE;
 
      return pDevice->CreateDepthStencilState(&desc, &pDepthState);
+}
+
+HRESULT Transparent::CreateWorldBuffers()
+{
+     D3D11_BUFFER_DESC desc = {};
+     desc.ByteWidth = sizeof(TransparentWorldBuffer);
+     desc.Usage = D3D11_USAGE_DEFAULT;
+     desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+     desc.CPUAccessFlags = 0;
+     desc.MiscFlags = 0;
+     desc.StructureByteStride = 0;
+
+
+
+     if (SUCCEEDED(pDevice->CreateBuffer(&desc, NULL, &pWorldBuffer))
+          && SUCCEEDED(pDevice->CreateBuffer(&desc, NULL, &pWorldBuffer2)))
+     {
+          TransparentWorldBuffer transparentWorldBuffer;
+          transparentWorldBuffer.worldMatrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, -0.1f);
+          transparentWorldBuffer.color = DirectX::XMFLOAT4(1.0f, 1.0f, 0.0f, 0.5f);
+          pDeviceContext->UpdateSubresource(pWorldBuffer, 0, NULL, &transparentWorldBuffer, 0, 0);
+
+          transparentWorldBuffer.worldMatrix = DirectX::XMMatrixTranslation(0.0f, 0.0f, 0.1f);
+          transparentWorldBuffer.color = DirectX::XMFLOAT4(0.0f, 1.0f, 1.0f, 0.5f);
+          pDeviceContext->UpdateSubresource(pWorldBuffer2, 0, NULL, &transparentWorldBuffer, 0, 0);
+          return S_OK;
+     }
+
+     return S_FALSE;
 }

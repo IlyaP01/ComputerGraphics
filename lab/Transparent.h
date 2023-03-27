@@ -15,11 +15,12 @@ private:
           float x, y, z;
      };
 
-     const Vertex vertices[4] = {
-          {0.6, -1, -1},
-          {0.6,  1, -1},
-          {0.6,  1,  1},
-          {0.6, -1,  1}
+     const Vertex vertices[4] =
+     {
+          {-1.0, -1.0, 0},
+          {-1.0, 1.0, 0},
+          {1.0, 1.0, 0},
+          {1.0, -1.0, 0},
      };
 
      const USHORT indices[6] = {
@@ -32,6 +33,7 @@ private:
      HRESULT CreateRasterizerState();
      HRESULT CreateBlendState();
      HRESULT CreateDepthState();
+     HRESULT CreateWorldBuffers();
 
      ID3D11Device* pDevice = nullptr;
      ID3D11DeviceContext* pDeviceContext = nullptr;
@@ -40,7 +42,6 @@ private:
      ID3D11Buffer* pIndexBuffer = nullptr;
 
      ID3D11VertexShader* pVertexShader = nullptr;
-     ID3D11VertexShader* pVertexShader2 = nullptr;
      ID3D11PixelShader* pPixelShader = nullptr;
      
      ID3D11RasterizerState* pRasterizerState = nullptr;
@@ -48,5 +49,8 @@ private:
 
      ID3D11DepthStencilState* pDepthState = nullptr;
      ID3D11BlendState* pBlendState = nullptr;
+
+     ID3D11Buffer* pWorldBuffer;
+     ID3D11Buffer* pWorldBuffer2;
 };
 

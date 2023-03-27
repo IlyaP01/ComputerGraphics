@@ -1,15 +1,14 @@
 #include "Sky.h"
 
 #include "directxtk/DDSTextureLoader.h"
+#include "utils.h"
 
 #include <d3dcompiler.h>
 #include <dxgi.h>
 
 #include <vector>
 
-#define SAFE_RELEASE(DXResource) do { if ((DXResource) != NULL) { (DXResource)->Release(); } } while (false);
-
-struct ViewMatrixBuffer
+struct SceneBuffer
 {
      DirectX::XMMATRIX viewProjMatrix;
      DirectX::XMFLOAT4 cameraPos;
@@ -98,7 +97,7 @@ bool Sky::Update(DirectX::XMMATRIX viewMatrix, DirectX::XMMATRIX projectionMatri
      HRESULT result = pDeviceContext->Map(pViewMatrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &subresource);
      if (SUCCEEDED(result))
      {
-          ViewMatrixBuffer& viewBuffer = *reinterpret_cast<ViewMatrixBuffer*>(subresource.pData);
+          SceneBuffer& viewBuffer = *reinterpret_cast<SceneBuffer*>(subresource.pData);
           viewBuffer.viewProjMatrix = DirectX::XMMatrixMultiply(viewMatrix, projectionMatrix);
           viewBuffer.cameraPos = DirectX::XMFLOAT4(cameraPos.x, cameraPos.y, cameraPos.z, 1.0f);
           pDeviceContext->Unmap(pViewMatrixBuffer, 0);
@@ -369,7 +368,7 @@ HRESULT Sky::CreateWorldMatrixBuffer()
 HRESULT Sky::CreateSceneMatrixBuffer()
 {
      D3D11_BUFFER_DESC desc = {};
-     desc.ByteWidth = sizeof(ViewMatrixBuffer);
+     desc.ByteWidth = sizeof(SceneBuffer);
      desc.Usage = D3D11_USAGE_DYNAMIC;
      desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
      desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
