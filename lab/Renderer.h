@@ -4,6 +4,8 @@
 #include "Sky.h"
 #include "Transparent.h"
 #include "Lights.h"
+#include "Frustum.h"
+#include "PostProc.h"
 
 #include <d3d11.h>
 #include <dxgi.h>
@@ -25,7 +27,24 @@ public:
 
      ~Renderer();
 private:
-     struct Vertex {
+     struct SceneBuffer
+     {
+          DirectX::XMMATRIX viewProjMatrix;
+          DirectX::XMFLOAT4 cameraPosition;
+          int lightCount[4];
+          DirectX::XMFLOAT4 lightPositions[maxLightNumber];
+          DirectX::XMFLOAT4 lightColors[maxLightNumber];
+          DirectX::XMFLOAT4 ambientColor;
+     };
+
+     struct WorldMatrixBuffer
+     {
+          DirectX::XMMATRIX worldMatrix;
+          DirectX::XMFLOAT4 shine;
+     };
+
+     struct Vertex 
+     {
           DirectX::XMFLOAT3 pos;
           DirectX::XMFLOAT2 uv;
           DirectX::XMFLOAT3 normal;
@@ -73,7 +92,13 @@ private:
         20, 22, 21, 20, 23, 22
      };
 
-     static constexpr const DirectX::XMFLOAT4 ambientColor_{ 0.5f, 0.5f, 0.5f, 1.0f };
+     const DirectX::XMFLOAT4 AABB[2] = {
+          {-0.5, -0.5, -0.5, 1.0},
+          {0.5,  0.5, 0.5, 1.0}
+     };
+
+     static constexpr const DirectX::XMFLOAT4 ambientColor_{ 0.8f, 0.8f, 0.8f, 1.0f };
+     static constexpr const size_t maxInst = 20;
 
      Renderer() = default;
      HRESULT SetupBackBuffer();
@@ -81,12 +106,14 @@ private:
      HRESULT CreateVertexBuffer();
      HRESULT CreateIndexBuffer();
      HRESULT CreateWorldMatrixBuffer();
+     HRESULT CreateWorldBufferInstVis();
      HRESULT CreateSceneMatrixBuffer();
      HRESULT CreateRasterizerState();
      HRESULT CreateTextures();
      HRESULT CreateSamplers();
      HRESULT CreateDepthBuffer();
      HRESULT CreateDepthState();
+     HRESULT InitRenderTargetTexture();
 
      std::shared_ptr<const Camera> pCamera = nullptr;
 
@@ -104,11 +131,11 @@ private:
      ID3D11Buffer* pIndexBuffer = nullptr;
 
      ID3D11Buffer* pWorldMatrixBuffer = nullptr;
-     ID3D11Buffer* pWorldMatrixBuffer2 = nullptr;
+     ID3D11Buffer* pWorldBufferInstVis = nullptr;
      ID3D11Buffer* pViewMatrixBuffer = nullptr;
      ID3D11RasterizerState* pRasterizerState = nullptr;
 
-     ID3D11ShaderResourceView* pCubeTexture = nullptr;
+     ID3D11ShaderResourceView* pTextureView = nullptr;
      ID3D11ShaderResourceView* pCubeNormalMap = nullptr;
 
      ID3D11SamplerState* pCubeTextureSampler = nullptr;
@@ -124,4 +151,13 @@ private:
      Sky sky;
      Transparent trans;
      Lights lights;
+     std::vector<WorldMatrixBuffer> worldMatricies;
+     Frustum frustum;
+     PostProc postProc;
+     std::vector<XMINT4> ids;
+
+     ID3D11Texture2D* pRenderTargetTexture = nullptr;
+     ID3D11RenderTargetView* pRenderTargetView = nullptr;
+     ID3D11ShaderResourceView* pShaderResourceViewRenderResult = nullptr;
+     D3D11_VIEWPORT viewport_;
 };

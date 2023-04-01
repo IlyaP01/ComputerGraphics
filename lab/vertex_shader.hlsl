@@ -1,10 +1,20 @@
 #include "scene_buffer.hlsli"
 
-cbuffer WorldBuffer : register (b0)
+struct WorldBuffer
 {
      float4x4 world;
      float4 shine;
 };
+
+cbuffer WorldBufferInst : register (b0)
+{
+     WorldBuffer worldBuffer[20];
+};
+
+cbuffer WorldBufferInstVis : register (b2)
+{
+     uint4 ids[100];
+}
 
 struct VSInput
 {
@@ -12,6 +22,7 @@ struct VSInput
      float2 texCoord : TEXCOORD;
      float3 normal : NORMAL;
      float3 tangent : TANGENT;
+     uint instanceId : SV_InstanceID;
 };
 
 struct VSOutput
@@ -21,17 +32,21 @@ struct VSOutput
      float2 texCoord : TEXCOORD;
      float3 normal : NORMAL;
      float3 tangent : TANGENT;
+     nointerpolation uint instanceId : INST_ID;
 };
 
 VSOutput main(VSInput input)
 {
      VSOutput output;
 
-     output.worldPos = mul(world, float4(input.position, 1.0f));
+     unsigned int idx = ids[input.instanceId].x;
+
+     output.worldPos = mul(worldBuffer[idx].world, float4(input.position, 1.0f));
      output.position = mul(viewProj, output.worldPos);
      output.texCoord = input.texCoord;
-     output.normal = mul(world, float4(input.normal, 1.0f)).xyz;
-     output.tangent = mul(world, float4(input.tangent, 1.0f)).xyz;
+     output.normal = mul(worldBuffer[idx].world, float4(input.normal, 1.0f)).xyz;
+     output.tangent = mul(worldBuffer[idx].world, float4(input.tangent, 1.0f)).xyz;
+     output.instanceId = idx; 
 
      return output;
 }

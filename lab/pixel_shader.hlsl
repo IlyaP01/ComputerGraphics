@@ -1,14 +1,19 @@
 #include "calc_color.hlsli"
 
-Texture2D cubeTexture : register (t0);
+Texture2DArray cubeTexture : register (t0);
 Texture2D cubeNormalTexture : register (t1);
 SamplerState cubeSampler : register(s0);
 SamplerState cubeNormalSampler : register (s1);
 
-cbuffer WorldBuffer : register (b0)
+struct WorldBuffer
 {
      float4x4 world;
      float4 shine;
+};
+
+cbuffer WorldBufferInst : register (b0)
+{
+     WorldBuffer worldBuffer[20];
 };
 
 struct VSOutput
@@ -18,12 +23,18 @@ struct VSOutput
      float2 texCoord : TEXCOORD;
      float3 normal : NORMAL;
      float3 tangent : TANGENT;
+     nointerpolation uint instanceId : INST_ID;
 };
 
 float4 main(VSOutput input) : SV_Target0
 {
-     float3 color = cubeTexture.Sample(cubeSampler, input.texCoord).xyz;
+     unsigned int idx = input.instanceId;
+     float3 color = cubeTexture.Sample(cubeSampler, float3(input.texCoord, worldBuffer[idx].shine.z)).xyz;
      float3 finalColor = ambientColor.xyz * color;
+     if (idx % 2 == 1)
+     {
+          return float4(finalColor, 1.0);
+     }
 
      float3 norm = float3(0, 0, 0);
      if (lightCount.y > 0)
@@ -37,5 +48,5 @@ float4 main(VSOutput input) : SV_Target0
           norm = input.normal;
      }
 
-     return float4(CalculateColor(color, norm, input.worldPos.xyz, shine.x, false), 1.0);
+     return float4(CalculateColor(color, norm, input.worldPos.xyz, worldBuffer[idx].shine.x, false), 1.0);
 }
